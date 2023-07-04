@@ -1,0 +1,148 @@
+﻿@using PracticalFourteen.Pagination
+@model PagedResult<PracticalFourteen.Employee>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+<p>
+    @Html.ActionLink("Create New", "Create")
+</p>
+
+<div class="mb-3">
+    <input class="form-control" id="searchInput" type="text" placeholder="Search Name here...">
+</div>
+
+<table class="table table-striped table-hover table table-bordered">
+    <tr class="table-dark text-center">
+        <th>
+            @Html.DisplayNameFor(model => model.Items.First().Name)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Items.First().DOB)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Items.First().Age)
+        </th>
+        <th>Actions</th>
+    </tr>
+    <tbody id="fillHere">
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.DOB)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Age)
+                </td>
+                <td>
+                    @Html.ActionLink("Edit", "Edit", new { id = item.Id }, htmlAttributes: new { @class = "btn btn-sm btn-warning" }) |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }, htmlAttributes: new { @class = "btn btn-sm btn-success" }) |
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id }, htmlAttributes: new { @class = "btn btn-sm btn-danger" })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="pagination">
+    @if (Model.TotalCount > Model.PageSize)
+    {
+        int totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+        int maxVisiblePages = 5;
+
+
+        int startPage = Math.Max(1, Model.PageNumber - (maxVisiblePages / 2));
+        int endPage = Math.Min(totalPages, startPage + maxVisiblePages - 1);
+
+
+        if (Model.PageNumber > 1)
+        {
+<a href="@Url.Action("Index", new { page = Model.PageNumber - 1 })">Previous</a> }
+
+
+
+                for (int page = startPage; page <= endPage; page++)
+                {
+                    if (page == Model.PageNumber)
+                    {
+<a class="active">@page</a> }
+                    else
+                    {
+<a href="@Url.Action("Index", new { page = page })" >@page</a> }
+                }
+
+
+
+                if (Model.PageNumber < totalPages)
+                {
+<a href="@Url.Action("Index", new { page = Model.PageNumber + 1 })">Next</a>}
+            }
+</div>
+
+@section scripts {
+    <script>
+
+        $(document).ready(function () {
+            $('#searchInput').on('keyup', function (e) {
+                var searchTerm = $('#searchInput').val();
+
+                var isDataFound = true;
+                
+                $("#search").keyup((e) => {
+                    // setting the default page
+                    Model.pageNo.text("1");
+                });
+
+                $.ajax({
+                    url: '/Employees/GetData',
+                    type: 'GET',
+                    data: { SearchString: e.target.value, pageNo: 1 },
+                    success: (data) => {
+                        if (data.length == 0) {
+                            $("#fillHere").html('<tr ><td colspan="4"> Nothing to Show</td></tr>')
+                        }
+                        else {
+                            var html = ""
+                            $("#fillHere").text("");
+
+                            $.each(data, function (index, item) {
+
+                                var jsonDate = item.DOB;
+
+                                var microsoftJsonDate = jsonDate;
+                                var timestamp = parseInt(microsoftJsonDate.match(/\d+/)[0]);
+                                var date = new Date(timestamp);
+                                var year = date.getFullYear();
+                                var month = String(date.getMonth() + 1).padStart(2, '0');
+                                var day = String(date.getDate()).padStart(2, '0');
+                                var formattedDate = year + '-' + month + '-' + day;
+
+
+                                html += "<tr><td>" + item.Name + "</td><td>" + formattedDate + "</td><td>" + item.Age + "</td><td>" +
+                                    "<a class='btn btn-warning btn-sm' href='/Home/Edit/" + item.Id + "'>Edit</a> | " +
+                                    "<a class='btn btn-success btn-sm' href='/Home/Details/" + item.Id + "'>Details</a> | " +
+                                    "<a class='btn btn-danger btn-sm' href='/home/Delete/" + item.Id + "'>Delete</a>"
+                                    + "</td></tr > "
+                            })
+                            // filling the html
+                            $("#fillHere").html(html);
+
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+        });
+
+    </script>
+    
+    }
